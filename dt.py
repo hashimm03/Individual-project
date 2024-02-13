@@ -9,7 +9,10 @@ class DecisionTree:
     def __init__(self, root=None):
         self.root = root        # Root node of the decision tree
     
-    def addNode():
+    def addNode(node):
+        pass
+
+    def pathToLeaf(path):
         pass
 
 def FindStrictExtStr(C, M, e):
@@ -21,4 +24,19 @@ def FindStrictExtStr(C, M, e):
     
         return M0, M1
     
+    #X = empty tree
+    # eLeaf = leaf of example following current tree?
+    # path to eleaf represent as list?
+    # e_ value of eLeaf
+
+    # for all features e and e_ diagree on
+        # M_ = extend tree for that specific example
+        # l = new leaf for example e
+        # A' = annotation of l
+        # X = X + M_
+        #
+        # for all edges Pe
+            #
     
+    
+
