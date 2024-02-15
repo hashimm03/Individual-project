@@ -1,19 +1,14 @@
 class TreeNode:
-    def __init__(self, feature=None, value=None, left=None, right=None):
+    def __init__(self, feature=None, value=None, child0=None, child1=None):
         self.feature = feature  # Feature associated with the node
         self.value = value      # 0 or 1 if it's a leaf node, None otherwise
-        self.left = left        # Left child node
-        self.right = right      # Right child node
+        self.child0 = child0      # Left child node
+        self.child1 = child1      # Right child node
 
 class DecisionTree:
     def __init__(self, root=None):
         self.root = root        # Root node of the decision tree
     
-    def addNode(node):
-        pass
-
-    def pathToLeaf(path):
-        pass
 
 def FindStrictExtStr(C, M, e):
     if (M == None):
@@ -24,19 +19,36 @@ def FindStrictExtStr(C, M, e):
     
         return M0, M1
     
-    #X = empty tree
-    # eLeaf = leaf of example following current tree?
-    # path to eleaf represent as list?
-    # e_ value of eLeaf
+    X = None
+    # eLeaf is a leaf that is given when running the example through the current tree
+    # ePath is the path to get to this tree
+    eLeaf = M.root
+    ePath = []
+    ePath.add(eLeaf)
+    while(eLeaf.value == None ):
+        for f in CFeatures:
+            index = 0
+            if f == eLeaf.feature:
+                break
 
-    # for all features e and e_ diagree on
-        # M_ = extend tree for that specific example
-        # l = new leaf for example e
+        if e[index] == 0:
+            eLeaf = eLeaf.child0
+        else:
+            eLeaf = eLeaf.child1
+        ePath.add(eLeaf)
+
+    # e_ value of eLeaf
+    e_ = eLeaf.value
+
+    # for all features e and e_ diagree on - features that havent been considered in current tree?
+        # M_ = extend tree for that feature
+        # l = new leaf for feature
         # A' = annotation of l
-        # X = X + M_
+        # X = X + M_ add this extension to X
         #
-        # for all edges Pe
+        # for all edges in epath
             #
+
     
     
 
