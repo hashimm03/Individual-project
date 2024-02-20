@@ -5,17 +5,23 @@ class TreeNode:
         self.value = value      # 0 or 1 if it's a leaf node, None otherwise
         self.child0 = child0      # Left child node
         self.child1 = child1      # Right child node
-        if(self.value != None):
-            self.annotation = getAnnotation(self)
-    
-    def getAnnotation(leaf):
-        annotation = []
-
-        return annotation
 
 class DecisionTree:
     def __init__(self, root=None):
         self.root = root        # Root node of the decision tree
+        self.leafExampleMap = {}  # Stores examples for each leaf node
+
+    def AddExampleToLeaf(self, node, example):
+        if node.left is None and node.right is None:  # It's a leaf node
+            nodeID = id(node)  # Unique identifier for the node
+            if nodeID not in self.leafExampleMap:
+                self.leafExampleMap[nodeID] = []
+            self.leafExampleMap[nodeID].append(example)
+
+    def getExampleForLeaf(self, leaf):
+        node_id = id(leaf)
+        examples = self.leafExampleMap.get(node_id, [])
+        return examples[0] if examples else None
     
 def FindStrictExtStr(C, M, e):
     if (M == None):
@@ -23,6 +29,9 @@ def FindStrictExtStr(C, M, e):
         M0 = DecisionTree(root=l0)
         l1 = TreeNode(value=1)
         M1 = DecisionTree(root=l1)
+        for example in C:
+            M0.AddExampleToLeaf(l0, example)
+            M1.AddExampleToLeaf(l1, example)
     
         return M0, M1
     
