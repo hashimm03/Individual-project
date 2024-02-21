@@ -11,17 +11,43 @@ class DecisionTree:
         self.root = root        # Root node of the decision tree
         self.leafExampleMap = {}  # Stores examples for each leaf node
 
-    def AddExampleToLeaf(self, node, example):
-        if node.left is None and node.right is None:  # It's a leaf node
-            nodeID = id(node)  # Unique identifier for the node
-            if nodeID not in self.leafExampleMap:
-                self.leafExampleMap[nodeID] = []
-            self.leafExampleMap[nodeID].append(example)
+    def AddExampleToLeaf(self, leaf, example):
+        if leaf.left is None and leaf.right is None:  # It's a leaf node
+            leafID = id(leaf)  # Unique identifier for the node
+            if leafID not in self.leafExampleMap:
+                self.leafExampleMap[leafID] = []
+            self.leafExampleMap[leafID].append(example)
 
     def getExampleForLeaf(self, leaf):
         node_id = id(leaf)
         examples = self.leafExampleMap.get(node_id, [])
         return examples[0] if examples else None
+    
+    def findLeafAndPathForExample(self, example):
+        eLeaf = self.root
+        ePath = []
+        ePath.append(eLeaf)
+        while(eLeaf.value == None ):
+            for f in CFeatures:
+                index = 0
+                if f == eLeaf.feature:
+                    break
+
+            if example[index] == 0:
+                eLeaf = eLeaf.child0
+            else:
+                eLeaf = eLeaf.child1
+            ePath.append(eLeaf)
+        return eLeaf, ePath
+    
+    def DisagreeFeatures(self, example1, example2):
+        disagree = []
+        # Iterate over the feature values of both examples (excluding the classifier at the end)
+        for i, (val1, val2) in enumerate(zip(example1[:-1], example2[:-1])):
+            if val1 != val2:  # If the feature values disagree
+                disagree.append(self.features[i])  # Append the feature name
+        return disagree
+        
     
 def FindStrictExtStr(C, M, e):
     if (M == None):
@@ -38,34 +64,34 @@ def FindStrictExtStr(C, M, e):
     X = None
     # eLeaf is a leaf that is given when running the example through the current tree
     # ePath is the path to get to this tree
-    eLeaf = M.root
-    ePath = []
-    ePath.append(eLeaf)
-    while(eLeaf.value == None ):
+    eLeafAndPath = M.FindLeafAndPathForExample(example)
+    eLeaf = eLeafAndPath[0]
+    ePath = eLeafAndPath[1]
+
+    # e_ example that reaches eLeaf
+    e_ = M.getExampleForLeaf(eLeaf)
+    disagreeFeatures = M.DisagreeFeatures(e, e_)
+
+
+    # for all features e and e_ diagree on
+    for features in disagreeFeatures:
         for f in CFeatures:
             index = 0
             if f == eLeaf.feature:
                 break
 
-        if e[index] == 0:
-            eLeaf = eLeaf.child0
+        l = TreeNode(value = [e[-1]])
+        if e[i] == 0:
+            n = TreeNode(feature=features, child0 = l, child1 =M.root )
         else:
-            eLeaf = eLeaf.child1
-        ePath.append(eLeaf)
+            n = TreeNode(feature=features, child0 = M.root, child1 = l)
+        
+        M_ = DecisionTree(root = n)
+        M_.leafExampleMap = M.leafExampleMap
+        M_.AddExampleToLeaf(l, e)
+        
 
-    # e_ value of eLeaf
-    e_ = eLeaf.examples[0]
-    disagreeFeatures = []
-
-
-    # for all features e and e_ diagree on - features that havent been considered in current tree?
-        # M_ = extend tree for that feature
-        # l = new leaf for feature
-        # A' = annotation of l
-        # X = X + M_ add this extension to X
-        #
-        # for all edges in epath
-            #
+        X.append(M_)
 
     
     
