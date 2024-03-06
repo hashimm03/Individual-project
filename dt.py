@@ -1,4 +1,4 @@
-import config
+from config import C, CFeatures
 from copy import deepcopy
 
 class TreeNode:
@@ -8,11 +8,11 @@ class TreeNode:
         self.child0 = child0      # Left child node
         self.child1 = child1      # Right child node
     
-    def deep_copy(self):
+    def DeepCopy(self):
         # Recursively copy the node and its children
-        child0_copy = self.child0.deep_copy() if self.child0 else None
-        child1_copy = self.child1.deep_copy() if self.child1 else None
-        return TreeNode(self.feature, self.value, child0_copy, child1_copy)
+        child0Copy = self.child0.DeepCopy() if self.child0 else None
+        child1Copy = self.child1.DeepCopy() if self.child1 else None
+        return TreeNode(self.feature, self.value, child0Copy, child1Copy)
 
 class DecisionTree:
     def __init__(self, root=None):
@@ -20,7 +20,7 @@ class DecisionTree:
         self.leafExampleMap = {}  # Stores examples for each leaf node
 
     def AddExampleToLeaf(self, leaf, example):
-        if leaf.left is None and leaf.right is None:  # It's a leaf node
+        if leaf.child0 is None and leaf.child1 is None:  # It's a leaf node
             leafID = id(leaf)  # Unique identifier for the node
             if leafID not in self.leafExampleMap:
                 self.leafExampleMap[leafID] = []
@@ -31,7 +31,7 @@ class DecisionTree:
         examples = self.leafExampleMap.get(node_id, [])
         return examples[0] if examples else None
     
-    def findLeafAndPathForExample(self, example):
+    def FindLeafAndPathForExample(self, example):
         eLeaf = self.root
         ePath = []
         ePath.append(eLeaf)
@@ -50,54 +50,55 @@ class DecisionTree:
     
     def DisagreeFeatures(self, example1, example2):
         disagree = []
+        if example2 is None:
+            print("Error:  examples 2 is None.")
+            return []
         # Iterate over the feature values of both examples (excluding the classifier at the end)
         for i, (val1, val2) in enumerate(zip(example1[:-1], example2[:-1])):
             if val1 != val2:  # If the feature values disagree
-                disagree.append(self.features[i])  # Append the feature name
+                disagree.append(CFeatures[i])  # Append the feature name
         return disagree
 
     def removeExample(self, example):
         # Iterate over all leaf nodes stored in the leaf_example_map
-        for node_id, examples in list(self.leaf_example_map.items()):
+        for node_id, examples in list(self.leafExampleMap.items()):
             if example in examples:
                 examples.remove(example)  # Remove the example from the list
 
                 # If the list becomes empty after removal, consider removing the key from the map
                 if not examples:
-                    del self.leaf_example_map[node_id]
+                    del self.leafExampleMap[node_id]
                 break  # Assuming each example only appears once, we can stop searching
     
-    def deep_copy(self):
-        root_copy = self.root.deep_copy() if self.root else None
-        tree_copy = DecisionTree(root_copy)
-        tree_copy.leafExampleMap = self.leafExampleMap.copy()  # Shallow copy might be sufficient here
-        return tree_copy
+    def DeepCopy(self):
+        rootCopy = self.root.DeepCopy() if self.root else None
+        treeCopy = DecisionTree(rootCopy)
+        treeCopy.leafExampleMap = self.leafExampleMap.copy()  # Shallow copy might be sufficient here
+        return treeCopy
     
-    def computePath(root, target_node):
+    def computePath(self, target_node):
         """
         Compute the path from the root to the target_node.
         The path is a list of 0s and 1s, where 0 means 'go left' and 1 means 'go right'.
         """
         path = []
-        stack = [(root, [])]  # Stack to hold nodes to visit, along with the path to reach them
+        stack = [(self.root, [])]  # Use self.root to access the root node of the tree instance
 
         while stack:
             current, current_path = stack.pop()
 
-            # Check if the current node is the target
             if current is target_node:
-                return current_path  # Return the path that led to the target_node
+                return current_path
 
-            # If not, add the children to the stack with updated paths
             if current.child1 is not None:
-                stack.append((current.child1, current_path + [1]))  # Right child, add 1 to path
+                stack.append((current.child1, current_path + [1]))
 
             if current.child0 is not None:
-                stack.append((current.child0, current_path + [0]))  # Left child, add 0 to path
+                stack.append((current.child0, current_path + [0]))
 
-        return None  # If target_node is not found in the tree
+        return path
     
-    def findEquivalentNode(copied_root, path):
+    def findEquivalentNode(self, copied_root, path):
         """
         Given the root of a copied tree and a path (list of 0s and 1s),
         navigate through the tree following the path to find the equivalent node.
@@ -120,7 +121,7 @@ class DecisionTree:
         
         return count(self.root)
     
-    def printTree(self, node=None, prefix=""):
+    def PrintTree(self, node=None, prefix=""):
         if node is None:
             node = self.root
 
@@ -130,9 +131,9 @@ class DecisionTree:
             # Print the current node's feature
             print(f"{prefix}Node: {node.feature}")
             # Recursively print the left child
-            self.print_tree(node.child0, prefix + "  0-> ")
+            self.PrintTree(node.child0, prefix + "  0-> ")
             # Recursively print the right child
-            self.print_tree(node.child1, prefix + "  1-> ")
+            self.PrintTree(node.child1, prefix + "  1-> ")
 
     
 def FindStrictExtStr(C, M, e):
@@ -146,35 +147,26 @@ def FindStrictExtStr(C, M, e):
             M1.AddExampleToLeaf(l1, example)
     
         return [M0, M1]
+    X = []
+    # This function needs to be adjusted to track the features used along the path
+    eLeaf, ePath = M.FindLeafAndPathForExample(e)
+    usedFeatures = set(node.feature for node in ePath if node.feature is not None)
     
-    X = None
-    # eLeaf is a leaf that is given when running the example through the current tree
-    # ePath is the path to get to this tree
-    eLeafAndPath = M.FindLeafAndPathForExample(example)
-    eLeaf = eLeafAndPath[0]
-    ePath = []
-    ePath.append(eLeafAndPath[1])
-
-    # e_ example that reaches eLeaf
     e_ = M.getExampleForLeaf(eLeaf)
-    disagreeFeatures = M.DisagreeFeatures(e, e_)
 
-    # for all features e and e_ diagree on
+    disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_) if f not in usedFeatures]
+    
     for feature in disagreeFeatures:
-        featureIndex = 0
-        for f in CFeatures:
-            if f == eLeaf.feature:
-                break
-            featureIndex += 1
-
-        # set leaf to classification of e
-        l = TreeNode(value = e[-1])
-
-        # create new root ad perform first extension
+        # Assuming featureIndex is correctly determined here...
+        featureIndex = CFeatures.index(feature)
+        
+        # Create new node and leaf based on disagreement
+        l = TreeNode(value=e[-1])
         if e[featureIndex] == 0:
-            n = TreeNode(feature=feature, child0 = l, child1 =M.root )
+            n = TreeNode(feature=feature, child0=l, child1=M.root)
         else:
-            n = TreeNode(feature=feature, child0 = M.root, child1 = l)
+            n = TreeNode(feature=feature, child0=M.root, child1=l)
+
         M_ = DecisionTree(root = n)
 
         # adding the annotation
@@ -188,6 +180,7 @@ def FindStrictExtStr(C, M, e):
 
         # for each node in path
         for i in range(len(ePath)-1):
+            print("qqqqq")
             featureIndex = 0
             for f in CFeatures:
                 if f == ePath[i].feature:
@@ -195,13 +188,14 @@ def FindStrictExtStr(C, M, e):
                 featureIndex += 1
             
              # first make copy of M
-            M_copy = M.deepCopy()
-            pathToTarget = M.computePath(M.root, ePath[i])
-            copyEPathNode = M.findEquivalentNode(M_copy.root, pathToTarget)
-            pathToTargetChild = M.computePath(M.root, ePath[i+1])
-            copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTarget)
 
             if ePath[i].value == None: # not a leaf
+                M_copy = M.DeepCopy()
+                pathToTarget = M.computePath(ePath[i])
+                copyEPathNode = M.findEquivalentNode(M_copy.root, pathToTarget)
+                pathToTargetChild = M.computePath(ePath[i+1])
+                copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
+                
                 l = TreeNode(value = e[-1]) # leaf with value equal to example classification
                 if e[featureIndex] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
                     n = TreeNode(feature=feature, child0 = l, child1 = copyEPathNodeChild )
@@ -221,7 +215,6 @@ def FindStrictExtStr(C, M, e):
                 M_copy.removeExample(e)
                 # add example to new node
                 M_copy.AddExampleToLeaf(l, e)
-
                 X.append(M_copy)
     
     return X

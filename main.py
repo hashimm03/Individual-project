@@ -1,5 +1,5 @@
-import dt
-from config import C
+from dt import TreeNode, DecisionTree, FindStrictExtStr
+from config import C, CFeatures
 
 def FindOptModelStr(C, s):
     return FindOptExtStr(C, s, None)
@@ -12,42 +12,56 @@ def FindOptExtStr(C, s, M):
     countExamples = len(C)
     countCorrectExamples = 0
     for e in C:
-        n = M.root
-        while(n.value == None ):
-            for f in CFeatures:
+        if(M != None):
+            n = M.root
+            while(n.value == None ):
                 index = 0
-                if f == eLeaf.feature:
-                    break
+                for f in CFeatures:
+                    if f == n.feature:
+                        break
+                    index += 1
 
-            if e[index] == 0:
-                n = n.child0
-            else:
-                n = n.child1
+                if e[index] == 0:
+                    n = n.child0
+                else:
+                    n = n.child1
         
-        if n.value == e[-1]:
-            countCurrentExamples += 1
+            if n.value == e[-1]:
+                countCorrectExamples += 1
+            else:
+                incorrectExample = e
         else:
             incorrectExample = e
+            break
     
-    if countCurrentExamples == countExamples:
+    if(countCorrectExamples == countExamples):
         return M
-    
-    count = M.countNodes()
+    if(M == None):
+        count = 0
+    else:
+        count = M.countNodes()
     if(count >= s):
         return None
     
-    X = FindStrictExtsStr(C, M, e)
+    X = FindStrictExtStr(C, M, incorrectExample)
     
     B = None
     for tree in X:
-        A = FindOptExtStr(C, s, tree)
-        if(A == None and (B == None or B.countNodes() > A.countNodes)):
-           B = A
+        tree.PrintTree()
+        input()
+        if(tree.countNodes() <= s):
+            A = FindOptExtStr(C, s, tree)
+            if(A != None and (B == None or B.countNodes() > A.countNodes())):
+                B = A
+                #B.PrintTree()
+                #input()
     
     return B
     
-tree = FindOptModelStr(C, 1000)
-tree.printTree()
+tree = FindOptModelStr(C, 100)
+if(tree != None):
+    print("final")
+    tree.PrintTree()
     
 
     
