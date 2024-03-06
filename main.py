@@ -1,5 +1,5 @@
 import dt
-import config
+from config import C
 
 def FindOptModelStr(C, s):
     return FindOptExtStr(C, s, None)
@@ -32,14 +32,24 @@ def FindOptExtStr(C, s, M):
     if countCurrentExamples == countExamples:
         return M
     
-    node = M.root
-    count = 1
-    while(node.value == None ):
-        count += 1
-        node = node.child0
-    count += 1
-    while count >= s:
+    count = M.countNodes()
+    if(count >= s):
         return None
+    
+    X = FindStrictExtsStr(C, M, e)
+    
+    B = None
+    for tree in X:
+        A = FindOptExtStr(C, s, tree)
+        if(A == None and (B == None or B.countNodes() > A.countNodes)):
+           B = A
+    
+    return B
+    
+tree = FindOptModelStr(C, 1000)
+tree.printTree()
+    
+
     
 
 
