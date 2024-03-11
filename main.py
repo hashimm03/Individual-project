@@ -47,21 +47,19 @@ def FindOptExtStr(C, s, M):
     
     B = None
     for tree in X:
-        tree.PrintTree()
-        input()
+        #tree.PrintTree()
+        #input()
         if(tree.countNodes() <= s):
             A = FindOptExtStr(C, s, tree)
             if(A != None and (B == None or B.countNodes() > A.countNodes())):
                 B = A
-                #B.PrintTree()
-                #input()
-    
     return B
     
-tree = FindOptModelStr(C, 100)
+tree = FindOptModelStr(C, 10)
 if(tree != None):
     print("final")
     tree.PrintTree()
+    print(tree.countNodes(), " nodes")
     
 
     
