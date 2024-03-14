@@ -131,7 +131,7 @@ class DecisionTree:
 
         """
         # Iterate over all leaf nodes stored in the leaf_example_map
-        for examples in list(self.leafExampleMap.items()):
+        for leafID,  examples in self.leafExampleMap.items():
             if example in examples:
                 examples.remove(example)  # Remove the example from the list
     
@@ -210,10 +210,11 @@ class DecisionTree:
         
         return count(self.root)
     
-    def PrintTree(self, node=None, prefix=""):
+    def PrintTree(self, node=None, prefix="", isLast=True, branchType = None):
         """
         prints the tree to the terminal
 
+        """
         """
         if node is None:
             node = self.root
@@ -227,7 +228,27 @@ class DecisionTree:
             self.PrintTree(node.child0, prefix + "  0-> ")
             # Recursively print the right child
             self.PrintTree(node.child1, prefix + "  1-> ")
-    
+        """
+        if node is None:
+            node = self.root
+        
+        # Determine the appropriate connector based on isLast
+        connector = "└── " if isLast else "├── "
+        branchIndicator = "[1] " if branchType == 1 else "[0] " if branchType == 0 else ""
+
+        # Prepare the next prefix for child nodes
+        next_prefix = prefix + ("    " if isLast else "│   ")
+
+        if node.value is not None:  # If it's a leaf node
+            print(f"{prefix}{connector}{branchIndicator}Leaf: {node.value}", self.getExampleForLeaf(node))
+        else:
+            print(f"{prefix}{connector}{branchIndicator}Node: {node.feature}")
+            # Recursively print the left child (if exists), indicating it as a 0 branch
+            if node.child0 is not None:
+                self.PrintTree(node.child0, next_prefix, node.child1 is None, branchType=0)
+            # Recursively print the right child (if exists), indicating it as a 1 branch
+            if node.child1 is not None:
+                self.PrintTree(node.child1, next_prefix, True, branchType=1)
     def predict(self, example, CFeatures):
         """
         Traverses the decision tree to predict the outcome for a given example.
@@ -337,7 +358,6 @@ def FindStrictExtStr(C, M, e):
             # add example to new node
             M_.AddExampleToLeaf(l, e)
 
-            #M_.PrintTree()
             # first type of extension
             X.append(M_)
 
@@ -347,6 +367,7 @@ def FindStrictExtStr(C, M, e):
             
             # first make copy of M
             M_copy = deepcopy(M)
+            M_copy.features = M.features.copy()
             pathToTarget = M.computePath(ePath[i])
             copyEPathNode = M.findEquivalentNode(M_copy.root, pathToTarget)
             pathToTargetChild = M.computePath(ePath[i+1])
@@ -371,7 +392,7 @@ def FindStrictExtStr(C, M, e):
                 # add example to new node
                 M_copy.AddExampleToLeaf(l, e)
                 # second type of extension
-                #M_copy.PrintTree()
+
                 X.append(M_copy)
     
     return X

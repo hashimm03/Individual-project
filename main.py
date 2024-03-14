@@ -67,7 +67,6 @@ def FindOptExtStr(C, s, M):
     B = None
     for tree in X:
         tree.PrintTree()
-        input()
         if(tree.countNodes() <= s):
             A = FindOptExtStr(C, s, tree) # recursively call itself
             # if the tree returned by A is smaller than B or B is None
@@ -76,7 +75,7 @@ def FindOptExtStr(C, s, M):
     return B
 
 # usage
-tree = FindOptModelStr(C, 100)
+tree = FindOptModelStr(C, 10)
 if(tree != None):
     print("final")
     tree.PrintTree()
