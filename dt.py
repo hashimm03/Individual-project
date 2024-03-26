@@ -55,9 +55,7 @@ class DecisionTree:
         
         """
         if leaf.child0 is None and leaf.child1 is None:  # It's a leaf node
-            if leaf.id not in self.leafExampleMap: # if leaf not already in map add it
-                self.leafExampleMap[leaf.id] = []
-            self.leafExampleMap[leaf.id].append(example) # assign example to leaf
+            self.leafExampleMap[leaf.id] = [example] # assign example to leaf
 
     def getExampleForLeaf(self, leaf):
         """
@@ -115,6 +113,9 @@ class DecisionTree:
         disagree = []
         if example2 is None: # if e_ has no examples return an empty list
             print("Error:  examples 2 is None.")
+            return []
+        if example1 is None: # if e_ has no examples return an empty list
+            print("Error:  examples 1 is None.")
             return []
         # Iterate over the feature values of both examples (excluding the classifier at the end)
         for i, (val1, val2) in enumerate(zip(example1[:-1], example2[:-1])):
@@ -249,6 +250,7 @@ class DecisionTree:
             # Recursively print the right child (if exists), indicating it as a 1 branch
             if node.child1 is not None:
                 self.PrintTree(node.child1, next_prefix, True, branchType=1)
+
     def predict(self, example, CFeatures):
         """
         Traverses the decision tree to predict the outcome for a given example.
@@ -295,6 +297,45 @@ class DecisionTree:
         accuracy = correct_predictions / len(dataset)
         print(f"\nAccuracy: {accuracy:.2f} ({correct_predictions}/{len(dataset)})")
     
+    def validatePath(self, node, decisions={}):
+        # Base case: If node is None, return True (empty path is trivially valid)
+        if node is None:
+            return True
+
+        # If it's a leaf node, validate the examples assigned to this leaf
+        if node.child0 is None and node.child1 is None:
+            examples = self.getExampleForLeaf(node)
+            if examples is None:
+                # No examples to validate, consider it valid
+                return True
+            for example in examples:
+                # Check each example against the decisions made on the path to this leaf
+                for feature, decision in decisions.items():
+                    feature_index = CFeatures.index(feature)
+                    if example[feature_index] != decision:
+                        return False  # Found an example that doesn't match the path's decisions
+            return True  # All examples for this leaf are consistent with the path's decisions
+
+        # Recursive case: Check both children, updating decisions with the current node's feature
+        if node.feature is not None:
+            # Prepare the decisions dict for the left and right child paths
+            decisions_left = decisions.copy()
+            decisions_right = decisions.copy()
+            
+            decisions_left[node.feature] = 0  # Decision to go left
+            decisions_right[node.feature] = 1  # Decision to go right
+            
+            # Validate paths to the left and right children
+            valid_left = self.validatePath(node.child0, decisions_left)
+            valid_right = self.validatePath(node.child1, decisions_right)
+
+            # Return True if both paths are valid, False otherwise
+            return valid_left and valid_right
+
+        # If the current node is not a leaf and has no feature, something is wrong
+        return False
+
+    
 def FindStrictExtStr(C, M, e):
     """
     finds a full set of extensions for M and example e
@@ -306,7 +347,6 @@ def FindStrictExtStr(C, M, e):
     Return:
         Array of different decision trees which are extensions of M
     """
-    #print("E---------", e)
     # creates 2 decision trees consisting of 1 node, one with value 0 and one with value of 1
     if (M == None):
         l0 = TreeNode(value=0)
@@ -353,13 +393,14 @@ def FindStrictExtStr(C, M, e):
             M_.features = M.features.copy()
             M_.features.add(feature)
 
-            # remove example from leaf it was at previously
-            M_.removeExample(e)
             # add example to new node
             M_.AddExampleToLeaf(l, e)
 
+            if M_.validatePath(n ,{}):
             # first type of extension
-            X.append(M_)
+                X.append(M_)
+            else:
+                continue
 
         # for each node in path
         for i in range(len(ePath)-1):
@@ -387,12 +428,12 @@ def FindStrictExtStr(C, M, e):
                     copyEPathNode.child1 = n
                 
                 M_copy.features.add(feature)
-                # remove example from leaf it was at previously
-                M_copy.removeExample(e)
                 # add example to new node
                 M_copy.AddExampleToLeaf(l, e)
                 # second type of extension
-
-                X.append(M_copy)
+                if M_copy.validatePath(n ,{}):
+                    X.append(M_copy)
+                else:
+                    continue
     
     return X
