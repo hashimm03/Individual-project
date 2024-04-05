@@ -1,4 +1,4 @@
-from dt import TreeNode, DecisionTree, FindStrictExtStr
+from dt_integer import TreeNode, DecisionTree, FindStrictExtStr
 from config import C, CFeatures
 
 def FindOptModelStr(C, s):
@@ -33,9 +33,9 @@ def FindOptExtStr(C, s, M):
                     index += 1
                 # sets n as its child
                 if e[index] == 0:
-                    n = n.child0
+                    n = n.childLeft
                 else:
-                    n = n.child1
+                    n = n.childRight
 
             # checks classification of e according to tree M
             if n.value == e[-1]:
@@ -74,7 +74,7 @@ def FindOptExtStr(C, s, M):
     return B
 
 # usage
-tree = FindOptModelStr(C, 7)
+tree = FindOptModelStr(C, 10)
 if(tree != None):
     print("final")
     tree.PrintTree()
