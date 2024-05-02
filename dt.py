@@ -20,17 +20,6 @@ class TreeNode:
         self.child1 = child1      # Right child node
         self.id = TreeNode.nextID
         TreeNode.nextID += 1 # setting id so when making copies the nodes have same examples assigned
-    
-    def DeepCopy(self):
-        """
-        Recursively copies the node and its children
-
-        """
-        child0Copy = self.child0.DeepCopy() if self.child0 else None
-        child1Copy = self.child1.DeepCopy() if self.child1 else None
-        nodeCopy =  TreeNode(self.feature, self.value, child0Copy, child1Copy)
-        nodeCopy.id = self.id
-        return nodeCopy
 
 class DecisionTree:
     def __init__(self, root=None):
@@ -85,10 +74,7 @@ class DecisionTree:
         ePath = []
         ePath.append(eLeaf) # adds the root to the path
         while(eLeaf.value == None ): # while its not a leaf
-            for f in CFeatures: # find index of the feature that we are currently looking at
-                index = 0
-                if f == eLeaf.feature:
-                    break 
+            index = CFeatures.index(eLeaf.feature)
 
             # based on value stored in example for that feature traverse through the tree
             if example[index] == 0:
@@ -122,30 +108,6 @@ class DecisionTree:
             if val1 != val2:  # If the feature values disagree
                 disagree.append(CFeatures[i])  # Append the feature name
         return disagree
-
-    def removeExample(self, example):
-        """
-        removes example from leaf, used when extending tree we assign example to a new leaf so should remove it from where it previously was
-
-        Args:
-            example ([]): example from the dataset
-
-        """
-        # Iterate over all leaf nodes stored in the leaf_example_map
-        for leafID,  examples in self.leafExampleMap.items():
-            if example in examples:
-                examples.remove(example)  # Remove the example from the list
-    
-    def DeepCopy(self):
-        """
-        creates deep copy of decision tree, so we can make extensions and modifications without making changes to original tree
-
-        """
-        rootCopy = self.root.DeepCopy() if self.root else None # create copy of root and all child nodes using DeepCopy() function
-        treeCopy = DecisionTree(rootCopy) # make new decision tree with copied root
-        treeCopy.leafExampleMap = self.leafExampleMap.copy()
-        treeCopy.features = self.features.copy()
-        return treeCopy
     
     def computePath(self, targetNode):
         """
@@ -251,7 +213,7 @@ class DecisionTree:
             if node.child1 is not None:
                 self.PrintTree(node.child1, next_prefix, True, branchType=1)
 
-    def predict(self, example, CFeatures):
+    def predict(self, example):
         """
         Traverses the decision tree to predict the outcome for a given example.
         
@@ -272,7 +234,7 @@ class DecisionTree:
                 current_node = current_node.child1
         return current_node.value  # Return the prediction
     
-    def test_decision_tree(self, dataset, CFeatures):
+    def TestDecisionTree(self, dataset):
         """
         Tests the decision tree on a dataset and prints the outcome for each example.
 
@@ -285,7 +247,7 @@ class DecisionTree:
             # Separate features and actual outcome
             features, actual = example[:-1], example[-1]
             # Get the prediction for the current example
-            predicted = self.predict(features, CFeatures)
+            predicted = self.predict(features)
             # Check if the prediction is correct
             if predicted == actual:
                 correct_predictions += 1
@@ -296,44 +258,6 @@ class DecisionTree:
         # Print the overall accuracy
         accuracy = correct_predictions / len(dataset)
         print(f"\nAccuracy: {accuracy:.2f} ({correct_predictions}/{len(dataset)})")
-    
-    def validatePath(self, node, decisions={}):
-        # Base case: If node is None, return True (empty path is trivially valid)
-        if node is None:
-            return True
-
-        # If it's a leaf node, validate the examples assigned to this leaf
-        if node.child0 is None and node.child1 is None:
-            examples = self.getExampleForLeaf(node)
-            if examples is None:
-                # No examples to validate, consider it valid
-                return True
-            for example in examples:
-                # Check each example against the decisions made on the path to this leaf
-                for feature, decision in decisions.items():
-                    feature_index = CFeatures.index(feature)
-                    if example[feature_index] != decision:
-                        return False  # Found an example that doesn't match the path's decisions
-            return True  # All examples for this leaf are consistent with the path's decisions
-
-        # Recursive case: Check both children, updating decisions with the current node's feature
-        if node.feature is not None:
-            # Prepare the decisions dict for the left and right child paths
-            decisions_left = decisions.copy()
-            decisions_right = decisions.copy()
-            
-            decisions_left[node.feature] = 0  # Decision to go left
-            decisions_right[node.feature] = 1  # Decision to go right
-            
-            # Validate paths to the left and right children
-            valid_left = self.validatePath(node.child0, decisions_left)
-            valid_right = self.validatePath(node.child1, decisions_right)
-
-            # Return True if both paths are valid, False otherwise
-            return valid_left and valid_right
-
-        # If the current node is not a leaf and has no feature, something is wrong
-        return False
 
     
 def FindStrictExtStr(C, M, e):
@@ -358,29 +282,25 @@ def FindStrictExtStr(C, M, e):
                 M1.AddExampleToLeaf(l1, example)
             else:
                 M0.AddExampleToLeaf(l0, example)
-
     
         return [M0, M1]
     X = []
 
     # navigate through decision tree using example and store the end leaf and path
-    eLeaf, ePath = M.FindLeafAndPathForExample(e)
-    # features that have already been considered in pathj
-    usedFeatures = set(node.feature for node in ePath if node.feature is not None)
-    #print("ePath:", [node.feature for node in ePath])
-    #print("usedFeatures:", usedFeatures)   
+    eLeaf, ePath = M.FindLeafAndPathForExample(e) 
     
     # get example assigned to eleaf
     e_ = M.getExampleForLeaf(eLeaf)[0] if M.getExampleForLeaf(eLeaf) is not None else None
-
     # features that have a different value for e and e_
-    disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_) if f not in usedFeatures]
+    disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_) if f not in M.features] # if f not in M.features # optimisation
     
     for feature in disagreeFeatures:
-        if feature not in M.features: # find index of feature
-            featureIndex = CFeatures.index(feature)
-            
-            # Create new node and leaf based on disagreement
+        featureIndex = CFeatures.index(feature)
+
+        # only extend by features if index of node n is smaller than child node index
+        if(M.root.feature is None or featureIndex < CFeatures.index(M.root.feature)):
+                        
+                # Create new node and leaf based on disagreement
             l = TreeNode(value=e[-1])
             if e[featureIndex] == 0:
                 n = TreeNode(feature=feature, child0=l, child1=M.root)
@@ -396,11 +316,7 @@ def FindStrictExtStr(C, M, e):
             # add example to new node
             M_.AddExampleToLeaf(l, e)
 
-            if M_.validatePath(n ,{}):
-            # first type of extension
-                X.append(M_)
-            else:
-                continue
+            X.append(M_)
 
         # for each node in path
         for i in range(len(ePath)-1):
@@ -414,26 +330,25 @@ def FindStrictExtStr(C, M, e):
             pathToTargetChild = M.computePath(ePath[i+1])
             copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
 
-            if ePath[i].value == None: # not a leaf
-                l = TreeNode(value = e[-1]) # leaf with value equal to example classification
-                if e[featureIndex] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
-                    n = TreeNode(feature=feature, child0 = l, child1 = copyEPathNodeChild )
-                else:
-                    n = TreeNode(feature=feature, child0 = copyEPathNodeChild, child1 = l)
-                
-                # now we need to set the node in paths child to n
-                if e[featureIndex] == 0:
-                    copyEPathNode.child0 = n
-                else:
-                    copyEPathNode.child1 = n
-                
-                M_copy.features.add(feature)
-                # add example to new node
-                M_copy.AddExampleToLeaf(l, e)
-                # second type of extension
-                if M_copy.validatePath(n ,{}):
+            # only extend by features if index of node n is smaller than child node index
+            if(copyEPathNodeChild.feature is None or (featureIndex < CFeatures.index(copyEPathNodeChild.feature) and featureIndex > CFeatures.index(copyEPathNode.feature))):
+                if ePath[i].value == None: # not a leaf
+                    l = TreeNode(value = e[-1]) # leaf with value equal to example classification
+                    if e[featureIndex] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
+                        n = TreeNode(feature=feature, child0 = l, child1 = copyEPathNodeChild )
+                    else:
+                        n = TreeNode(feature=feature, child0 = copyEPathNodeChild, child1 = l)
+                        
+                    # now we need to set the node in paths child to n
+                    if e[featureIndex] == 0:
+                        copyEPathNode.child0 = n
+                    else:
+                        copyEPathNode.child1 = n
+                        
+                    M_copy.features.add(feature)
+                    # add example to new node
+                    M_copy.AddExampleToLeaf(l, e)
                     X.append(M_copy)
-                else:
-                    continue
+                        
     
     return X

@@ -126,19 +126,6 @@ class DecisionTree:
                         disagree.append((feature, val))
                     
         return disagree
-
-    def removeExample(self, example):
-        """
-        removes example from leaf, used when extending tree we assign example to a new leaf so should remove it from where it previously was
-
-        Args:
-            example ([]): example from the dataset
-
-        """
-        # Iterate over all leaf nodes stored in the leaf_example_map
-        for leafID,  examples in self.leafExampleMap.items():
-            if example in examples:
-                examples.remove(example)  # Remove the example from the list
     
     def DeepCopy(self):
         """
@@ -248,7 +235,7 @@ class DecisionTree:
             if node.childRight is not None:
                 self.PrintTree(node.childRight, next_prefix, True, 1)
         
-    def predict(self, example, CFeatures):
+    def predict(self, example):
         """
         Traverses the decision tree to predict the outcome for a given example.
         
@@ -269,7 +256,7 @@ class DecisionTree:
                 current_node = current_node.childRight
         return current_node.value  # Return the prediction
     
-    def test_decision_tree(self, dataset, CFeatures):
+    def TestDecisionTree(self, dataset):
         """
         Tests the decision tree on a dataset and prints the outcome for each example.
 
@@ -282,7 +269,7 @@ class DecisionTree:
             # Separate features and actual outcome
             features, actual = example[:-1], example[-1]
             # Get the prediction for the current example
-            predicted = self.predict(features, CFeatures)
+            predicted = self.predict(features)
             # Check if the prediction is correct
             if predicted == actual:
                 correct_predictions += 1
@@ -349,15 +336,14 @@ def FindStrictExtStr(C, M, e):
     """
     # creates 2 decision trees consisting of 1 node, one with value 0 and one with value of 1
     if (M == None):
-        l0 = TreeNode(value=0)
+        l0 = TreeNode(value=e[-1])
         M0 = DecisionTree(root=l0)
-        l1 = TreeNode(value=1)
-        M1 = DecisionTree(root=l1)
+        M0.AddExampleToLeaf(l0, e)
         for example in C:
-            if example[-1] == 1:
+            if example[-1] != e[-1]:
+                l1 = TreeNode(value=example[-1])
+                M1 = DecisionTree(root=l1)
                 M1.AddExampleToLeaf(l1, example)
-            else:
-                M0.AddExampleToLeaf(l0, example)
 
         return [M0, M1]
     X = []
@@ -372,13 +358,9 @@ def FindStrictExtStr(C, M, e):
 
     # features that have a different value for e and e_
     disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_) if f not in usedFeatures]
-    print("all - ",disagreeFeatures, e, e_)
     
     for feature in disagreeFeatures:
-        if feature[0] not in M.features: # find index of feature
-            print("current tree:")
-            M.PrintTree()
-            print("current- ",feature)
+        if feature[0] not in M.features:
             featureIndex = CFeatures.index(feature[0])
             
             # Create new node and leaf based on disagreement
@@ -396,8 +378,6 @@ def FindStrictExtStr(C, M, e):
 
             # add example to new node
             M_.AddExampleToLeaf(l, e)
-            print("ext 1")
-            M_.PrintTree()
 
             if M_.validatePath(n ,{}):
             # first type of extension
@@ -434,8 +414,6 @@ def FindStrictExtStr(C, M, e):
                 # add example to new node
                 M_copy.AddExampleToLeaf(l, e)
 
-                print("ext 2")
-                M_copy.PrintTree()
                 # second type of extension
                 if M_copy.validatePath(n ,{}):
                     X.append(M_copy)
