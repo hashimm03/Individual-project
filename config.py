@@ -1,5 +1,5 @@
 from collections import OrderedDict
-
+"""
 C = [[0, 0, 0, 1, 0],
      [0, 0, 1, 0, 1],
      [0, 1, 0, 0, 0],
@@ -23,7 +23,7 @@ C = [[0,1,0,0,0,1,0,1,1],
      [0,0,1,1,0,0,1,0,1],
      [1,0,0,0,1,0,1,0,0]]
 CFeatures = ["sunny",]
-"""
+
 
 C = [[1, 1, 1],
      [1, 0, 0],
@@ -43,7 +43,7 @@ C = [
     [2, 6, 0],
 ]
 CFeatures = ["Size", "Weight"]
-
+"""
 
 C = [[1, 0, 1, 1, 1],
      [1, 0, 0, 0, 0],
@@ -55,7 +55,7 @@ C = [[1, 0, 1, 1, 1],
      [0, 1, 0, 0, 1],
      [0, 1, 1, 0, 1],]
 CFeatures = ["A", "B", "C", "D"]
-
+"""
 C = [
     [5, 8, 7, 10, 1],
     [3, 6, 2, 9, 0],
@@ -69,7 +69,7 @@ C = [
 ]
 CFeatures = ["A", "B", "C", "D"]
 
-"""
+
 [[5.1,3.5,1.4,0.2,"Iris-setosa"],
 [4.9,3.0,1.4,0.2,"Iris-setosa"],
 [4.7,3.2,1.3,0.2,"Iris-setosa"],
@@ -243,3 +243,4 @@ orderFeatures = []
 for key, values in featureValuesMap.items():
     for value in values:
         orderFeatures.append([key, value])
+"""
