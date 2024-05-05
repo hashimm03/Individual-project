@@ -1,8 +1,13 @@
-from dt import TreeNode, DecisionTree, FindStrictExtStr
-from config import C, CFeatures
+domain = "n"
+if domain == "b":
+    from dt import TreeNode, DecisionTree, FindStrictExtStr
+    from config import C, CFeatures
+else:
+    from dt_integer import TreeNode, DecisionTree, FindStrictExtStr
+    from config import C, CFeatures, orderFeatures
+
 import math
 
-countTree = 0
 def FindOptModelStr(C, s):
     # call other function passing None as M
     return FindOptExtStr(C, s, None)
@@ -56,8 +61,6 @@ def FindOptExtStr(C, s, M):
     
     B = None
     for tree in X:
-        global countTree
-        countTree += 1
         if(tree.countNodes() <= s):
             A = FindOptExtStr(C, s, tree) # recursively call itself
             # if the tree returned by A is smaller than B or B is None
@@ -118,20 +121,15 @@ def FindOptExtStr_BinarySearch(C, s, M):
     # get array of extensions for M
     X = FindStrictExtStr(C, M, incorrectExample)
     
-    B = None
     for tree in X:
-        global countTree
-        countTree += 1
         if(tree.countNodes() <= s):
             A = FindOptExtStr_BinarySearch(C, s, tree) # recursively call itself
             # if the tree returned by A is smaller than B or B is None
             if(A != None):
-                B = A
-                break
-    
-    return B
+                return A
+    return None
 
-def FindOptimalTreeSize(C):
+def FindMinimalTree_BinarySearch(C):
     """
     Uses binary search to find the smallest `s` such that a decision tree of size `s`
     can correctly classify all examples in C.
@@ -143,18 +141,21 @@ def FindOptimalTreeSize(C):
     Returns:
         DecisionTree: The smallest tree found within the optimal size or None if no such tree exists.
     """
-    def canConstructTree(s, M):
+    def ConstructTree(s, M):
         # Try to construct a tree with size `s`
 
         return FindOptModelStr_BinarySearch(C, s)
     
     # Find a reasonable upper bound for `s`, e.g., total number of nodes in a fully expanded tree
-    low, high = 1, math.pow(2,len(C) +1) - 1   # example of a rough upper bound
+    if (domain == "b"):
+        low, high = 1, int(math.pow(2,len(CFeatures) +1) - 1)   # example of a rough upper bound
+    else:
+        low, high = 1, int(math.pow(2,len(orderFeatures)+1) - 1)
     
     best_tree = None
     while low <= high:
         mid = (low + high) // 2
-        tree = canConstructTree(mid, None)
+        tree = ConstructTree(mid, None)
         if tree is not None:
             best_tree = tree
             high = mid - 1  # Try for a smaller tree
@@ -163,28 +164,36 @@ def FindOptimalTreeSize(C):
     
     return best_tree
 
-def FindTreeSize(C):
+def FindMinimalTree(C):
+    """
+    starting at size 1, looks for a decision tyree and increments s untill one is find or we are above the maximum
+    
+    Args:
+        C ([[]]): Dataset of all examples, last index of each row is the classification
+    
+    Returns:
+        DecisionTree: The smallest tree found within the optimal size or None if no such tree exists.
+    """
     s = 0
     tree = None
-    while tree is None:
+    if(domain == "b"):
+        max = int(math.pow(2,len(CFeatures) +1) - 1)
+    else:
+        max = int(math.pow(2,len(orderFeatures)+1) - 1)
+    while tree is None and s<max:
         s += 1
         tree = FindOptModelStr(C, s)
+
     return tree
 
 # usage
-tree = FindOptimalTreeSize(C)
+tree = FindMinimalTree_BinarySearch(C)
 if(tree != None):
-    print("final, binary", countTree)
-    tree.PrintTree()
-    print(tree.countNodes(), " nodes")
-    
+    tree.PrintTree() 
     tree.TestDecisionTree(C)
 
-countTree = 0
-tree = FindTreeSize(C)
+print("hsxbdw")
+tree = FindMinimalTree(C)
 if(tree != None):
-    print("final", countTree)
     tree.PrintTree()
-    print(tree.countNodes(), " nodes")
-    
     tree.TestDecisionTree(C)
