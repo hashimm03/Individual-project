@@ -109,7 +109,7 @@ class DecisionTree:
                 disagree.append(CFeatures[i])  # Append the feature name
         return disagree
     
-    def computePath(self, targetNode):
+    def ComputePath(self, targetNode):
         """
         Compute the path from the root to the target_node.
         The path is a list of 0s and 1s, where 0 means 'go left' and 1 means 'go right'.
@@ -178,20 +178,6 @@ class DecisionTree:
         prints the tree to the terminal
 
         """
-        """
-        if node is None:
-            node = self.root
-
-        if node.value is not None:  # It's a leaf node
-            print(f"{prefix}Leaf: {node.value}", self.getExampleForLeaf(node))
-        else:
-            # Print the current node's feature
-            print(f"{prefix}Node: {node.feature}")
-            # Recursively print the left child
-            self.PrintTree(node.child0, prefix + "  0-> ")
-            # Recursively print the right child
-            self.PrintTree(node.child1, prefix + "  1-> ")
-        """
         if node is None:
             node = self.root
         
@@ -213,7 +199,7 @@ class DecisionTree:
             if node.child1 is not None:
                 self.PrintTree(node.child1, next_prefix, True, branchType=1)
 
-    def predict(self, example):
+    def Classification(self, example):
         """
         Traverses the decision tree to predict the outcome for a given example.
         
@@ -247,7 +233,7 @@ class DecisionTree:
             # Separate features and actual outcome
             features, actual = example[:-1], example[-1]
             # Get the prediction for the current example
-            predicted = self.predict(features)
+            predicted = self.Classification(features)
             # Check if the prediction is correct
             if predicted == actual:
                 correct_predictions += 1
@@ -288,35 +274,38 @@ def FindStrictExtStr(C, M, e):
 
     # navigate through decision tree using example and store the end leaf and path
     eLeaf, ePath = M.FindLeafAndPathForExample(e) 
+    # to avoid extending by features already considered
+    usedFeatures = set(node.feature for node in ePath if node.feature is not None)
     
     # get example assigned to eleaf
     e_ = M.getExampleForLeaf(eLeaf)[0] if M.getExampleForLeaf(eLeaf) is not None else None
     # features that have a different value for e and e_
-    disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_) if f not in M.features] # if f not in M.features # optimisation
+    disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_)if f not in usedFeatures] # if f not in usedFeatures optimisation
     
     for feature in disagreeFeatures:
-        featureIndex = CFeatures.index(feature)
+        if feature not in M.features: # optimisation
+            featureIndex = CFeatures.index(feature)
 
-        # only extend by features if index of node n is smaller than child node index
-        if(M.root.feature is None or featureIndex < CFeatures.index(M.root.feature)):
-                        
-                # Create new node and leaf based on disagreement
-            l = TreeNode(value=e[-1])
-            if e[featureIndex] == 0:
-                n = TreeNode(feature=feature, child0=l, child1=M.root)
-            else:
-                n = TreeNode(feature=feature, child0=M.root, child1=l)
+            # only extend by features if index of node n is smaller than child node index
+            if(M.root.feature is None or featureIndex < CFeatures.index(M.root.feature)): # optimisation for symmetry
+                                
+                    # Create new node and leaf based on disagreement
+                l = TreeNode(value=e[-1])
+                if e[featureIndex] == 0:
+                    n = TreeNode(feature=feature, child0=l, child1=M.root)
+                else:
+                    n = TreeNode(feature=feature, child0=M.root, child1=l)
 
-            # create new decision tree with new root
-            M_ = DecisionTree(root = n)
-            M_.leafExampleMap = M.leafExampleMap.copy()
-            M_.features = M.features.copy()
-            M_.features.add(feature)
+                # create new decision tree with new root
+                M_ = DecisionTree(root = n)
+                M_.leafExampleMap = M.leafExampleMap.copy()
+                M_.features = M.features.copy()
+                M_.features.add(feature)
 
-            # add example to new node
-            M_.AddExampleToLeaf(l, e)
+                # add example to new node
+                M_.AddExampleToLeaf(l, e)
 
-            X.append(M_)
+                X.append(M_)
 
         # for each node in path
         for i in range(len(ePath)-1):
@@ -325,13 +314,13 @@ def FindStrictExtStr(C, M, e):
             # first make copy of M
             M_copy = deepcopy(M)
             M_copy.features = M.features.copy()
-            pathToTarget = M.computePath(ePath[i])
+            pathToTarget = M.ComputePath(ePath[i])
             copyEPathNode = M.findEquivalentNode(M_copy.root, pathToTarget)
-            pathToTargetChild = M.computePath(ePath[i+1])
+            pathToTargetChild = M.ComputePath(ePath[i+1])
             copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
 
             # only extend by features if index of node n is smaller than child node index
-            if(copyEPathNodeChild.feature is None or (featureIndex < CFeatures.index(copyEPathNodeChild.feature) and featureIndex > CFeatures.index(copyEPathNode.feature))):
+            if(copyEPathNodeChild.feature is None or (featureIndex < CFeatures.index(copyEPathNodeChild.feature) and featureIndex > CFeatures.index(copyEPathNode.feature))): # optimisation for symmetry
                 if ePath[i].value == None: # not a leaf
                     l = TreeNode(value = e[-1]) # leaf with value equal to example classification
                     if e[featureIndex] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
@@ -349,6 +338,6 @@ def FindStrictExtStr(C, M, e):
                     # add example to new node
                     M_copy.AddExampleToLeaf(l, e)
                     X.append(M_copy)
-                        
+                    
     
     return X

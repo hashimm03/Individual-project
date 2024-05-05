@@ -1,4 +1,4 @@
-from config import C, CFeatures, featureValuesMap
+from config import C, CFeatures, featureValuesMap, orderFeatures
 from copy import deepcopy
 
 class TreeNode:
@@ -21,17 +21,6 @@ class TreeNode:
         self.id = TreeNode.nextID
         self.threshold = threshold # thresehold which we compare the example values to
         TreeNode.nextID += 1 # setting id so when making copies the nodes have same examples assigned
-    
-    def DeepCopy(self):
-        """
-        Recursively copies the node and its children
-
-        """
-        childLeftCopy = self.childLeft.DeepCopy() if self.childLeft else None
-        childRightCopy = self.childRight.DeepCopy() if self.childRight else None
-        nodeCopy =  TreeNode(self.feature, self.value, childLeftCopy, childRightCopy)
-        nodeCopy.id = self.id
-        return nodeCopy
 
 class DecisionTree:
     def __init__(self, root=None):
@@ -127,18 +116,7 @@ class DecisionTree:
                     
         return disagree
     
-    def DeepCopy(self):
-        """
-        creates deep copy of decision tree, so we can make extensions and modifications without making changes to original tree
-
-        """
-        rootCopy = self.root.DeepCopy() if self.root else None # create copy of root and all child nodes using DeepCopy() function
-        treeCopy = DecisionTree(rootCopy) # make new decision tree with copied root
-        treeCopy.leafExampleMap = self.leafExampleMap.copy()
-        treeCopy.features = self.features.copy()
-        return treeCopy
-    
-    def computePath(self, targetNode):
+    def ComputePath(self, targetNode):
         """
         Compute the path from the root to the target_node.
         The path is a list of 0s and 1s, where 0 means 'go left' and 1 means 'go right'.
@@ -235,7 +213,7 @@ class DecisionTree:
             if node.childRight is not None:
                 self.PrintTree(node.childRight, next_prefix, True, 1)
         
-    def predict(self, example):
+    def Classification(self, example):
         """
         Traverses the decision tree to predict the outcome for a given example.
         
@@ -269,7 +247,7 @@ class DecisionTree:
             # Separate features and actual outcome
             features, actual = example[:-1], example[-1]
             # Get the prediction for the current example
-            predicted = self.predict(features)
+            predicted = self.Classification(features)
             # Check if the prediction is correct
             if predicted == actual:
                 correct_predictions += 1
@@ -280,47 +258,6 @@ class DecisionTree:
         # Print the overall accuracy
         accuracy = correct_predictions / len(dataset)
         print(f"\nAccuracy: {accuracy:.2f} ({correct_predictions}/{len(dataset)})")
-    
-    def validatePath(self, node, decisions={}):
-        # Base case: If node is None, return True (empty path is trivially valid)
-        if node is None:
-            return True
-
-        # If it's a leaf node, validate the examples assigned to this leaf
-        if node.childLeft is None and node.childRight is None:
-            examples = self.getExampleForLeaf(node)
-            if examples is None:
-                # No examples to validate, consider it valid
-                return True
-            for example in examples:
-                # Check each example against the decisions made on the path to this leaf
-                for feature, (threshold, direction) in decisions.items():
-                    feature_index = CFeatures.index(feature)
-                    if direction == "left" and not example[feature_index] <= threshold:
-                        return False  # Example doesn't match the decision to go left
-                    if direction == "right" and not example[feature_index] > threshold:
-                        return False  # Example doesn't match the decision to go right
-            return True  # All examples for this leaf are consistent with the path's decisions
-
-        # Recursive case: Check both children, updating decisions with the current node's feature
-        if node.feature is not None:
-            # Copy decisions to avoid mutating the original as we go down different paths
-            decisions_left = decisions.copy()
-            decisions_right = decisions.copy()
-
-            # Update decisions with the current node's threshold for the left and right paths
-            decisions_left[node.feature] = (node.threshold, "left")  # Decision to go left if <= threshold
-            decisions_right[node.feature] = (node.threshold, "right")  # Decision to go right if > threshold
-            
-            # Validate paths to the left and right children
-            valid_left = self.validatePath(node.childLeft, decisions_left)
-            valid_right = self.validatePath(node.childRight, decisions_right)
-
-            # Return True if both paths are valid, False otherwise
-            return valid_left and valid_right
-
-        # If the current node is not a leaf and has no feature, something is wrong
-        return False
 
     
 def FindStrictExtStr(C, M, e):
@@ -350,7 +287,7 @@ def FindStrictExtStr(C, M, e):
 
     # navigate through decision tree using example and store the end leaf and path
     eLeaf, ePath = M.FindLeafAndPathForExample(e)
-    # features that have already been considered in pathj
+    # features that have already been considered in path
     usedFeatures = set(node.feature for node in ePath if node.feature is not None)
 
     # get example assigned to eleaf
@@ -362,28 +299,28 @@ def FindStrictExtStr(C, M, e):
     for feature in disagreeFeatures:
         if feature[0] not in M.features:
             featureIndex = CFeatures.index(feature[0])
-            
-            # Create new node and leaf based on disagreement
-            l = TreeNode(value=e[-1])
-            if e[featureIndex] <= feature[1]:
-                n = TreeNode(feature=feature[0], childLeft=l, childRight=M.root, threshold=feature[1])
-            else:
-                n = TreeNode(feature=feature[0], childLeft=M.root, childRight=l, threshold = feature[1])
+            orderFeaturesIndex = orderFeatures.index(list(feature))
 
-            # create new decision tree with new root
-            M_ = DecisionTree(root = n)
-            M_.leafExampleMap = M.leafExampleMap.copy()
-            M_.features = M.features.copy()
-            M_.features.add(feature)
+            # only extend by features if index of node n is smaller than child node index
+            if(M.root.feature is None or orderFeaturesIndex < orderFeatures.index([M.root.feature, M.root.threshold])): # optimisation for symmetry
+                
+                # Create new node and leaf based on disagreement
+                l = TreeNode(value=e[-1])
+                if e[featureIndex] <= feature[1]:
+                    n = TreeNode(feature=feature[0], childLeft=l, childRight=M.root, threshold=feature[1])
+                else:
+                    n = TreeNode(feature=feature[0], childLeft=M.root, childRight=l, threshold = feature[1])
 
-            # add example to new node
-            M_.AddExampleToLeaf(l, e)
+                # create new decision tree with new root
+                M_ = DecisionTree(root = n)
+                M_.leafExampleMap = M.leafExampleMap.copy()
+                M_.features = M.features.copy()
+                M_.features.add(feature)
 
-            if M_.validatePath(n ,{}):
-            # first type of extension
+                # add example to new node
+                M_.AddExampleToLeaf(l, e)
+
                 X.append(M_)
-            else:
-                continue
 
         # for each node in path
         for i in range(len(ePath)-1):
@@ -392,32 +329,32 @@ def FindStrictExtStr(C, M, e):
             # first make copy of M
             M_copy = deepcopy(M)
             M_copy.features = M.features.copy()
-            pathToTarget = M.computePath(ePath[i])
+            pathToTarget = M.ComputePath(ePath[i])
             copyEPathNode = M.findEquivalentNode(M_copy.root, pathToTarget)
-            pathToTargetChild = M.computePath(ePath[i+1])
+            pathToTargetChild = M.ComputePath(ePath[i+1])
             copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
 
-            if ePath[i].value == None: # not a leaf
-                l = TreeNode(value = e[-1]) # leaf with value equal to example classification
-                if e[featureIndex] <= feature[1]: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
-                    n = TreeNode(feature=feature[0], childLeft = l, childRight = copyEPathNodeChild, threshold=feature[1])
-                else:
-                    n = TreeNode(feature=feature[0], childLeft = copyEPathNodeChild, childRight = l, threshold=feature[1])
-
-                # now we need to set the node in paths child to n
-                if e[featureIndex] <= ePath[i].threshold:
-                    copyEPathNode.childLeft = n
-                else:
-                    copyEPathNode.childRight = n
+             # only extend by features if index of node n is smaller than child node index
+            if(copyEPathNodeChild.feature is None or (orderFeaturesIndex < orderFeatures.index([copyEPathNodeChild.feature, copyEPathNodeChild.threshold]) and orderFeaturesIndex > orderFeatures.index([copyEPathNode.feature, copyEPathNode.threshold]))): # optimisation for symmetry
                 
-                M_copy.features.add(feature)
-                # add example to new node
-                M_copy.AddExampleToLeaf(l, e)
+                if ePath[i].value == None: # not a leaf
+                    l = TreeNode(value = e[-1]) # leaf with value equal to example classification
+                    if e[featureIndex] <= feature[1]: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
+                        n = TreeNode(feature=feature[0], childLeft = l, childRight = copyEPathNodeChild, threshold=feature[1])
+                    else:
+                        n = TreeNode(feature=feature[0], childLeft = copyEPathNodeChild, childRight = l, threshold=feature[1])
 
-                # second type of extension
-                if M_copy.validatePath(n ,{}):
+                    # now we need to set the node in paths child to n
+                    if e[featureIndex] <= ePath[i].threshold:
+                        copyEPathNode.childLeft = n
+                    else:
+                        copyEPathNode.childRight = n
+                    
+                    M_copy.features.add(feature)
+                    # add example to new node
+                    M_copy.AddExampleToLeaf(l, e)
+
+                    # second type of extension
                     X.append(M_copy)
-                else:
-                    continue
     
     return X
