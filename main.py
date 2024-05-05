@@ -192,7 +192,6 @@ if(tree != None):
     tree.PrintTree() 
     tree.TestDecisionTree(C)
 
-print("hsxbdw")
 tree = FindMinimalTree(C)
 if(tree != None):
     tree.PrintTree()
