@@ -203,11 +203,12 @@ class DecisionTree:
         """
         Traverses the decision tree to predict the outcome for a given example.
         
-        :param tree: The root node of the decision tree (instance of TreeNode).
-        :param example: A list of feature values for which to predict the outcome.
-        :param feature_names: A list of feature names corresponding to the indexes in 'example'.
+        Args:
+            tree(DecisionTree): The root node of the decision tree (instance of TreeNode).
+            example([]): A list of feature values for which to predict the outcome.
         
-        :return: The prediction at the leaf node reached by traversing the tree.
+        returns:
+            The prediction at the leaf node reached by traversing the tree.
         """
         current_node = self.root
         while current_node.value is None:  # Continue until a leaf node is reached
@@ -308,9 +309,7 @@ def FindStrictExtStr(C, M, e):
                 X.append(M_)
 
         # for each node in path
-        for i in range(len(ePath)-1):
-            featureIndex = CFeatures.index(ePath[i].feature)
-            
+        for i in range(len(ePath)-1):         
             # first make copy of M
             M_copy = deepcopy(M)
             M_copy.features = M.features.copy()
@@ -320,16 +319,16 @@ def FindStrictExtStr(C, M, e):
             copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
 
             # only extend by features if index of node n is smaller than child node index
-            if(copyEPathNodeChild.feature is None or (featureIndex < CFeatures.index(copyEPathNodeChild.feature) and featureIndex > CFeatures.index(copyEPathNode.feature))): # optimisation for symmetry
+            if(copyEPathNodeChild.feature is None or (CFeatures.index(feature)< CFeatures.index(copyEPathNodeChild.feature) and CFeatures.index(feature) > CFeatures.index(copyEPathNode.feature))): # optimisation for symmetry
                 if ePath[i].value == None: # not a leaf
                     l = TreeNode(value = e[-1]) # leaf with value equal to example classification
-                    if e[featureIndex] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
+                    if e[CFeatures.index(feature)] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
                         n = TreeNode(feature=feature, child0 = l, child1 = copyEPathNodeChild )
                     else:
                         n = TreeNode(feature=feature, child0 = copyEPathNodeChild, child1 = l)
                         
                     # now we need to set the node in paths child to n
-                    if e[featureIndex] == 0:
+                    if e[CFeatures.index(ePath[i].feature)] == 0:
                         copyEPathNode.child0 = n
                     else:
                         copyEPathNode.child1 = n
