@@ -288,7 +288,7 @@ def FindStrictExtStr(C, M, e):
     # navigate through decision tree using example and store the end leaf and path
     eLeaf, ePath = M.FindLeafAndPathForExample(e)
     # features that have already been considered in path
-    usedFeatures = set(node.feature for node in ePath if node.feature is not None)
+    usedFeatures = set((node.feature, node.threshold) for node in ePath if node.feature is not None)
 
     # get example assigned to eleaf
     e_ = M.getExampleForLeaf(eLeaf)[0] if M.getExampleForLeaf(eLeaf) is not None else None
@@ -297,16 +297,14 @@ def FindStrictExtStr(C, M, e):
     disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_) if f not in usedFeatures]
     
     for feature in disagreeFeatures:
-        if feature[0] not in M.features:
-            featureIndex = CFeatures.index(feature[0])
-            orderFeaturesIndex = orderFeatures.index(list(feature))
+        if feature not in M.features:
 
             # only extend by features if index of node n is smaller than child node index
-            if(M.root.feature is None or orderFeaturesIndex < orderFeatures.index([M.root.feature, M.root.threshold])): # optimisation for symmetry
+            if(M.root.feature is None or orderFeatures.index(list(feature)) < orderFeatures.index([M.root.feature, M.root.threshold])): # optimisation for symmetry
                 
                 # Create new node and leaf based on disagreement
                 l = TreeNode(value=e[-1])
-                if e[featureIndex] <= feature[1]:
+                if e[CFeatures.index(feature[0])] <= feature[1]:
                     n = TreeNode(feature=feature[0], childLeft=l, childRight=M.root, threshold=feature[1])
                 else:
                     n = TreeNode(feature=feature[0], childLeft=M.root, childRight=l, threshold = feature[1])
@@ -335,7 +333,7 @@ def FindStrictExtStr(C, M, e):
             copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
 
              # only extend by features if index of node n is smaller than child node index
-            if(copyEPathNodeChild.feature is None or (orderFeaturesIndex < orderFeatures.index([copyEPathNodeChild.feature, copyEPathNodeChild.threshold]) and orderFeaturesIndex > orderFeatures.index([copyEPathNode.feature, copyEPathNode.threshold]))): # optimisation for symmetry
+            if(copyEPathNodeChild.feature is None or (orderFeatures.index(list(feature)) < orderFeatures.index([copyEPathNodeChild.feature, copyEPathNodeChild.threshold]) and orderFeatures.index(list(feature)) > orderFeatures.index([copyEPathNode.feature, copyEPathNode.threshold]))): # optimisation for symmetry
                 
                 if ePath[i].value == None: # not a leaf
                     l = TreeNode(value = e[-1]) # leaf with value equal to example classification
@@ -345,7 +343,7 @@ def FindStrictExtStr(C, M, e):
                         n = TreeNode(feature=feature[0], childLeft = copyEPathNodeChild, childRight = l, threshold=feature[1])
 
                     # now we need to set the node in paths child to n
-                    if e[featureIndex] <= ePath[i].threshold:
+                    if e[CFeatures.index(ePath[i].feature)] <= ePath[i].threshold:
                         copyEPathNode.childLeft = n
                     else:
                         copyEPathNode.childRight = n
