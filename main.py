@@ -1,4 +1,4 @@
-domain = "n"
+domain = ""
 if domain == "b":
     from dt import TreeNode, DecisionTree, FindStrictExtStr
     from config import C, CFeatures
@@ -6,7 +6,9 @@ else:
     from dt_integer import TreeNode, DecisionTree, FindStrictExtStr
     from config import C, CFeatures, orderFeatures
 
-import math
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
+countTrees = 0
 
 def FindOptModelStr(C, s):
     # call other function passing None as M
@@ -61,7 +63,10 @@ def FindOptExtStr(C, s, M):
     
     B = None
     for tree in X:
+        global countTrees 
         if(tree.countNodes() <= s):
+            global countTrees
+            countTrees += 1
             A = FindOptExtStr(C, s, tree) # recursively call itself
             # if the tree returned by A is smaller than B or B is None
             if(A != None and (B == None or B.countNodes() > A.countNodes())):
@@ -122,12 +127,16 @@ def FindOptExtStr_BinarySearch(C, s, M):
     X = FindStrictExtStr(C, M, incorrectExample)
     
     for tree in X:
+        global countTrees
+        countTrees += 1
         if(tree.countNodes() <= s):
             A = FindOptExtStr_BinarySearch(C, s, tree) # recursively call itself
             # if the tree returned by A is smaller than B or B is None
             if(A != None):
                 return A
     return None
+
+low, high = 1, 1
 
 def FindMinimalTree_BinarySearch(C):
     """
@@ -141,28 +150,25 @@ def FindMinimalTree_BinarySearch(C):
     Returns:
         DecisionTree: The smallest tree found within the optimal size or None if no such tree exists.
     """
-    def ConstructTree(s, M):
-        # Try to construct a tree with size `s`
-
-        return FindOptModelStr_BinarySearch(C, s)
     
     # Find a reasonable upper bound for `s`, e.g., total number of nodes in a fully expanded tree
-    if (domain == "b"):
-        low, high = 1, int(math.pow(2,len(CFeatures) +1) - 1)   # example of a rough upper bound
-    else:
-        low, high = 1, int(math.pow(2,len(orderFeatures)+1) - 1)
+
+    low, high = 1, 2*len(C) - 1
     
     best_tree = None
     while low <= high:
         mid = (low + high) // 2
-        tree = ConstructTree(mid, None)
+        tree = FindOptModelStr_BinarySearch(C, mid)
         if tree is not None:
             best_tree = tree
             high = mid - 1  # Try for a smaller tree
         else:
             low = mid + 1  # Increase tree size
+        print(low)
+        print(high)
     
     return best_tree
+
 
 def FindMinimalTree(C):
     """
@@ -176,23 +182,38 @@ def FindMinimalTree(C):
     """
     s = 0
     tree = None
-    if(domain == "b"):
-        max = int(math.pow(2,len(CFeatures) +1) - 1)
-    else:
-        max = int(math.pow(2,len(orderFeatures)+1) - 1)
+    max = 2*len(C) + 1
     while tree is None and s<max:
         s += 1
+        #
         tree = FindOptModelStr(C, s)
 
     return tree
 
 # usage
-tree = FindMinimalTree_BinarySearch(C)
-if(tree != None):
-    tree.PrintTree() 
-    tree.TestDecisionTree(C)
+# Start the timer
+start_time = time.perf_counter()
 
+# Call the function to find the minimal tree
+tree = FindMinimalTree_BinarySearch(C)
+
+
+# Stop the timer
+end_time = time.perf_counter()
+
+# Calculate the elapsed time
+runtime = (end_time - start_time) * 1000
+
+# Output the runtime
+print(f"Runtime: {runtime} milliseconds")
+
+if(tree != None):
+    print(f"Minimal Decision Tree: {tree.countNodes()} nodes")
+    print(f"Number of Trees Created: {countTrees} trees")
+
+"""
 tree = FindMinimalTree(C)
 if(tree != None):
     tree.PrintTree()
     tree.TestDecisionTree(C)
+"""

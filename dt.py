@@ -284,29 +284,29 @@ def FindStrictExtStr(C, M, e):
     disagreeFeatures = [f for f in M.DisagreeFeatures(e, e_)if f not in usedFeatures] # if f not in usedFeatures optimisation
     
     for feature in disagreeFeatures:
-        if feature not in M.features: # optimisation
-            featureIndex = CFeatures.index(feature)
+        #if feature not in M.features: # optimisation
+        featureIndex = CFeatures.index(feature)
 
-            # only extend by features if index of node n is smaller than child node index
-            if(M.root.feature is None or featureIndex < CFeatures.index(M.root.feature)): # optimisation for symmetry
-                                
-                    # Create new node and leaf based on disagreement
-                l = TreeNode(value=e[-1])
-                if e[featureIndex] == 0:
-                    n = TreeNode(feature=feature, child0=l, child1=M.root)
-                else:
-                    n = TreeNode(feature=feature, child0=M.root, child1=l)
+        # only extend by features if index of node n is smaller than child node index
+        #if(M.root.feature is None or featureIndex < CFeatures.index(M.root.feature)): # optimisation for symmetry
+                        
+            # Create new node and leaf based on disagreement
+        l = TreeNode(value=e[-1])
+        if e[featureIndex] == 0:
+            n = TreeNode(feature=feature, child0=l, child1=M.root)
+        else:
+            n = TreeNode(feature=feature, child0=M.root, child1=l)
 
-                # create new decision tree with new root
-                M_ = DecisionTree(root = n)
-                M_.leafExampleMap = M.leafExampleMap.copy()
-                M_.features = M.features.copy()
-                M_.features.add(feature)
+        # create new decision tree with new root
+        M_ = DecisionTree(root = n)
+        M_.leafExampleMap = M.leafExampleMap.copy()
+        M_.features = M.features.copy()
+        M_.features.add(feature)
 
-                # add example to new node
-                M_.AddExampleToLeaf(l, e)
+        # add example to new node
+        M_.AddExampleToLeaf(l, e)
 
-                X.append(M_)
+        X.append(M_)
 
         # for each node in path
         for i in range(len(ePath)-1):         
@@ -319,24 +319,24 @@ def FindStrictExtStr(C, M, e):
             copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
 
             # only extend by features if index of node n is smaller than child node index
-            if(copyEPathNodeChild.feature is None or (CFeatures.index(feature)< CFeatures.index(copyEPathNodeChild.feature) and CFeatures.index(feature) > CFeatures.index(copyEPathNode.feature))): # optimisation for symmetry
-                if ePath[i].value == None: # not a leaf
-                    l = TreeNode(value = e[-1]) # leaf with value equal to example classification
-                    if e[CFeatures.index(feature)] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
-                        n = TreeNode(feature=feature, child0 = l, child1 = copyEPathNodeChild )
-                    else:
-                        n = TreeNode(feature=feature, child0 = copyEPathNodeChild, child1 = l)
-                        
-                    # now we need to set the node in paths child to n
-                    if e[CFeatures.index(ePath[i].feature)] == 0:
-                        copyEPathNode.child0 = n
-                    else:
-                        copyEPathNode.child1 = n
-                        
-                    M_copy.features.add(feature)
-                    # add example to new node
-                    M_copy.AddExampleToLeaf(l, e)
-                    X.append(M_copy)
+            #if(copyEPathNodeChild.feature is None or (CFeatures.index(feature)< CFeatures.index(copyEPathNodeChild.feature) and CFeatures.index(feature) > CFeatures.index(copyEPathNode.feature))): # optimisation for symmetry
+            if ePath[i].value == None: # not a leaf
+                l = TreeNode(value = e[-1]) # leaf with value equal to example classification
+                if e[CFeatures.index(feature)] == 0: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
+                    n = TreeNode(feature=feature, child0 = l, child1 = copyEPathNodeChild )
+                else:
+                    n = TreeNode(feature=feature, child0 = copyEPathNodeChild, child1 = l)
+                    
+                # now we need to set the node in paths child to n
+                if e[CFeatures.index(ePath[i].feature)] == 0:
+                    copyEPathNode.child0 = n
+                else:
+                    copyEPathNode.child1 = n
+                    
+                M_copy.features.add(feature)
+                # add example to new node
+                M_copy.AddExampleToLeaf(l, e)
+                X.append(M_copy)
                     
     
     return X
