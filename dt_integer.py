@@ -238,9 +238,9 @@ class DecisionTree:
         """
         Tests the decision tree on a dataset and prints the outcome for each example.
 
-        :param tree: The root node of the decision tree.
-        :param dataset: The dataset to test, where each example includes feature values and the actual outcome as the last element.
-        :param feature_names: A list of feature names corresponding to the indexes in the examples.
+        Args:
+            tree(DecisionTree): The root node of the decision tree.
+            dataset[[]]: The dataset to test, where each example includes feature values and the actual outcome as the last element.
         """
         correct_predictions = 0
         for example in dataset:
@@ -320,39 +320,39 @@ def FindStrictExtStr(C, M, e):
 
                 X.append(M_)
 
-        # for each node in path
-        for i in range(len(ePath)-1):
-            featureIndex = CFeatures.index(ePath[i].feature)
+    # for each node in path
+    for i in range(len(ePath)-1):
+        featureIndex = CFeatures.index(ePath[i].feature)
+        
+        # first make copy of M
+        M_copy = deepcopy(M)
+        M_copy.features = M.features.copy()
+        pathToTarget = M.ComputePath(ePath[i])
+        copyEPathNode = M.findEquivalentNode(M_copy.root, pathToTarget)
+        pathToTargetChild = M.ComputePath(ePath[i+1])
+        copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
+
+            # only extend by features if index of node n is smaller than child node index
+        if(copyEPathNodeChild.feature is None or (orderFeatures.index(list(feature)) < orderFeatures.index([copyEPathNodeChild.feature, copyEPathNodeChild.threshold]) and orderFeatures.index(list(feature)) > orderFeatures.index([copyEPathNode.feature, copyEPathNode.threshold]))): # optimisation for symmetry
             
-            # first make copy of M
-            M_copy = deepcopy(M)
-            M_copy.features = M.features.copy()
-            pathToTarget = M.ComputePath(ePath[i])
-            copyEPathNode = M.findEquivalentNode(M_copy.root, pathToTarget)
-            pathToTargetChild = M.ComputePath(ePath[i+1])
-            copyEPathNodeChild = M.findEquivalentNode(M_copy.root, pathToTargetChild)
+            if ePath[i].value == None: # not a leaf
+                l = TreeNode(value = e[-1]) # leaf with value equal to example classification
+                if e[featureIndex] <= feature[1]: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
+                    n = TreeNode(feature=feature[0], childLeft = l, childRight = copyEPathNodeChild, threshold=feature[1])
+                else:
+                    n = TreeNode(feature=feature[0], childLeft = copyEPathNodeChild, childRight = l, threshold=feature[1])
 
-             # only extend by features if index of node n is smaller than child node index
-            if(copyEPathNodeChild.feature is None or (orderFeatures.index(list(feature)) < orderFeatures.index([copyEPathNodeChild.feature, copyEPathNodeChild.threshold]) and orderFeatures.index(list(feature)) > orderFeatures.index([copyEPathNode.feature, copyEPathNode.threshold]))): # optimisation for symmetry
+                # now we need to set the node in paths child to n
+                if e[CFeatures.index(ePath[i].feature)] <= ePath[i].threshold:
+                    copyEPathNode.childLeft = n
+                else:
+                    copyEPathNode.childRight = n
                 
-                if ePath[i].value == None: # not a leaf
-                    l = TreeNode(value = e[-1]) # leaf with value equal to example classification
-                    if e[featureIndex] <= feature[1]: # if it is a 0 edge make new node with 0child leaf and 1 child next node in path
-                        n = TreeNode(feature=feature[0], childLeft = l, childRight = copyEPathNodeChild, threshold=feature[1])
-                    else:
-                        n = TreeNode(feature=feature[0], childLeft = copyEPathNodeChild, childRight = l, threshold=feature[1])
+                M_copy.features.add(feature)
+                # add example to new node
+                M_copy.AddExampleToLeaf(l, e)
 
-                    # now we need to set the node in paths child to n
-                    if e[CFeatures.index(ePath[i].feature)] <= ePath[i].threshold:
-                        copyEPathNode.childLeft = n
-                    else:
-                        copyEPathNode.childRight = n
-                    
-                    M_copy.features.add(feature)
-                    # add example to new node
-                    M_copy.AddExampleToLeaf(l, e)
-
-                    # second type of extension
-                    X.append(M_copy)
+                # second type of extension
+                X.append(M_copy)
     
     return X

@@ -225,9 +225,9 @@ class DecisionTree:
         """
         Tests the decision tree on a dataset and prints the outcome for each example.
 
-        :param tree: The root node of the decision tree.
-        :param dataset: The dataset to test, where each example includes feature values and the actual outcome as the last element.
-        :param feature_names: A list of feature names corresponding to the indexes in the examples.
+        Args:
+            tree(DecisionTree): The root node of the decision tree.
+            dataset[[]]: The dataset to test, where each example includes feature values and the actual outcome as the last element.
         """
         correct_predictions = 0
         for example in dataset:

@@ -152,6 +152,7 @@ C1 = [[-63, -85, 45, -91, 12, -4, 80,"Y"],
 CFeatures1 = ["A", "B", "C", "D", "E", "F", "G"]
 """
 
+# converts csv file to a 2d array
 def read_csv_to_list(filename):
     with open(filename, newline='') as file:
         reader = csv.reader(file)
@@ -159,17 +160,18 @@ def read_csv_to_list(filename):
     return data_list
 
 # Usage
-sample_size = 20
-filename = 'datasets/iris.csv'
-C_full = read_csv_to_list(filename)
-C = random.sample(C_full, sample_size)
-C.remove([])
-print(C)
+sample_size = 15 # size of sample
+filename = 'datasets/iris.csv' # name of file
+C_full = read_csv_to_list(filename) # full file to 2d array
+C = random.sample(C_full, sample_size) # takes a sample
+
+# populates the features list based on the number of column in dataset
 CFeatures = []
 for i in range(len(C[0])-1):
     CFeatures.append("f"+str(i))
 
-print(CFeatures)
+
+# the following is for handling numerical features
 
 # Initialize an OrderedDict to map each feature to an ordered set of its values
 featureValuesMap = OrderedDict()

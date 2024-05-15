@@ -7,7 +7,6 @@ else:
     from config import C, CFeatures, orderFeatures
 
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
 countTrees = 0
 
 def FindOptModelStr(C, s):
@@ -130,13 +129,15 @@ def FindOptExtStr_BinarySearch(C, s, M):
         global countTrees
         countTrees += 1
         if(tree.countNodes() <= s):
+            global start_time
+            current_time = time.perf_counter()
+            if (current_time - start_time) > 1000:
+                return None
             A = FindOptExtStr_BinarySearch(C, s, tree) # recursively call itself
             # if the tree returned by A is smaller than B or B is None
             if(A != None):
                 return A
     return None
-
-low, high = 1, 1
 
 def FindMinimalTree_BinarySearch(C):
     """
@@ -157,15 +158,22 @@ def FindMinimalTree_BinarySearch(C):
     
     best_tree = None
     while low <= high:
+        print(low)
+        print(high)
         mid = (low + high) // 2
+        print(mid)
         tree = FindOptModelStr_BinarySearch(C, mid)
+        global start_time
+        current_time = time.perf_counter()
+        if (current_time - start_time) > 1000:
+            print("Timing out due to long execution")
+            print(f"Low: {low}, High: {high}")
+            return None
         if tree is not None:
             best_tree = tree
             high = mid - 1  # Try for a smaller tree
         else:
             low = mid + 1  # Increase tree size
-        print(low)
-        print(high)
     
     return best_tree
 
@@ -192,11 +200,11 @@ def FindMinimalTree(C):
 
 # usage
 # Start the timer
+
 start_time = time.perf_counter()
 
 # Call the function to find the minimal tree
-tree = FindMinimalTree_BinarySearch(C)
-
+tree = FindOptModelStr(C, 5)
 
 # Stop the timer
 end_time = time.perf_counter()
@@ -206,14 +214,35 @@ runtime = (end_time - start_time) * 1000
 
 # Output the runtime
 print(f"Runtime: {runtime} milliseconds")
+print(f"Number of Trees Created: {countTrees} trees")
 
 if(tree != None):
     print(f"Minimal Decision Tree: {tree.countNodes()} nodes")
-    print(f"Number of Trees Created: {countTrees} trees")
 
 """
+def run_with_timeout(C):
+    global low, high, countTrees
+    global start_time
+    
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(FindMinimalTree_BinarySearch, C)
+            tree = future.result(timeout=1000)  # Timeout set for 1000 seconds
+            if tree:
+                end_time = time.perf_counter()
+                runtime = (end_time - start_time) * 100
+                print(f"Minimal Decision Tree: {tree.countNodes()} nodes")
+                print(f"Runtime: {runtime:.2f} milliseconds")
+    except TimeoutError:
+        print("Function timed out!")
+        print(f"Low: {low}, High: {high}")
+        # Here you handle the printing when a timeout occurs
+    finally:
+        print(f"Number of Trees Cre ted: {countTrees}")
+
+
 tree = FindMinimalTree(C)
 if(tree != None):
     tree.PrintTree()
-    tree.TestDecisionTree(C)
+    tree.TestDeisionTree(C)
 """
